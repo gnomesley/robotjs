@@ -7,11 +7,6 @@ os:
 
 env:
   matrix:
-  - TRAVIS_NODE_VERSION="0.10"
-  - TRAVIS_NODE_VERSION="0.12"
-  - TRAVIS_NODE_VERSION="4"
-  - TRAVIS_NODE_VERSION="5"
-  - TRAVIS_NODE_VERSION="6"
   - TRAVIS_NODE_VERSION="stable"
 
 addons:
@@ -45,16 +40,19 @@ before_script:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export DISPLAY=:99.0; fi
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then sh -e /etc/init.d/xvfb start; fi
 
+script:
+  - node --version
+
 install:
   - npm install
+  - npm install node-gyp -g
+  - node-gyp rebuild --runtime=electron --target=1.4.8 --disturl=https://atom.io/download/atom-shell --abi=48
+  - mv build/Release/robotjs.node build/Release/robotjs-$TRAVIS_OS_NAME.node
 
-script:
-  - npm test
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/e737dd5170be50cdba95
-    on_success: change
-    on_failure: always
-    on_start: never
+deploy:
+  provider: releases
+  api_key: "$GITHUB_API_KEY"
+  file: "build/Release/robotjs-$TRAVIS_OS_NAME.node"
+  skip_cleanup: true
+  on:
+    tags: true
