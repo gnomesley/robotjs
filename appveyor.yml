@@ -4,31 +4,46 @@
 environment:
   matrix:
   # node.js
-    - nodejs_version: "0.10"
-    - nodejs_version: "0.12"
-    - nodejs_version: "4"
-    - nodejs_version: "5"
-    - nodejs_version: "6"
     - nodejs_version: "Stable"
+
+platform:
+  - x86
+  - x64
 
 # Install scripts. (runs after repo cloning)
 install:
   # Get the latest stable version of Node 0.STABLE.latest
-  - ps: Install-Product node $env:nodejs_version
+  - ps: Install-Product node $env:nodejs_version $env:PLATFORM
   - IF %nodejs_version% EQU 0.8 npm -g install npm@2
   - IF %nodejs_version% EQU 0.8 set PATH=%APPDATA%\npm;%PATH%
   - npm -g install npm
   - IF %nodejs_version% NEQ 0.8 set PATH=%APPDATA%\npm;%PATH%
   # Typical npm stuff.
   - npm install
+  - npm install node-gyp -g
+  - node-gyp rebuild --runtime=electron --target=1.4.8 --disturl=https://atom.io/download/atom-shell --abi=48
+  - rename build\Release\robotjs.node robotjs-win-%PLATFORM%.node
 
 test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
   # run tests
-  - npm test
+  # - npm test
 
 build: off
 
 version: "{build}"
+
+artifacts:
+  - path: build\Release\robotjs-win-%PLATFORM%.node
+    name: build
+
+deploy:
+  - provider: GitHub
+    auth_token:
+      secure: BThhW0Ror3a97UkqaF8zVqZ9eyG9fh67rM6J0UbfEJa1m5QSon2dV19EbS0WP1yz
+    artifact: build
+    force_update: true
+    on:
+      appveyor_repo_tag: true
